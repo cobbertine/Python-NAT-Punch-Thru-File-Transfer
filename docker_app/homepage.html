@@ -1,0 +1,74 @@
+<html>
+    <head>
+        <script src="homepage.js"></script>
+        <link rel="stylesheet" href="homepage.css">
+    </head>
+    <body >
+        <!-- Currently flex box does not render properly on Firefox. Known issue: https://bugzilla.mozilla.org/show_bug.cgi?id=1042151 -->
+
+        <!--IO Box Section-->
+        <div class="io_div">
+            <!--Output Box. Column-reverse means elements are displayed from the bottom up rather than top down-->
+            <div id="flex_output_parent" class="io_output_div" >
+                
+                <!--Dynamic output goes here-->
+
+            </div>
+            <!--Input Box-->
+            <form autocomplete="off" custom_force_hide="true" onsubmit="return false;" id="input_form" class="io_input_form">
+                <div class="io_input_div">
+                    <label for="send_input" class="io_input_label">Input: </label>
+                    <input id="send_input" name="send_input" type="text" class="io_input_field">
+                    <button id="send_input_button" type="button" onclick="send_command()" class="io_input_button">Send</button>
+                </div>
+            </form>
+        </div>
+        <!--Service Status-->
+        <p class="status_paragraph">Current Status:&nbsp;<span id="app_status"></span></p>
+        <!--Start Configuration-->
+        <form autocomplete="off" id="start_form" class="start_up_config_form" onsubmit="return false;">
+            <!--Network Type-->
+            <div class="start_up_config_options_div">
+                <label for="network_type">Choose a network type:&nbsp;</label> 
+                <select id="network_type" name="network_type" onchange="on_network_type_selected();" class="start_up_config_options_select">
+                    <option value="" selected>Select</option>
+                    <option value="lan">LAN</option>
+                    <option value="net">Internet</option>
+                </select>
+                <!--Transfer Type-->
+                <div custom_force_hide="true" id="transfer_type_section" class="start_up_config_options_div">
+                    <label for="transfer_type">Choose a transfer type:</label>
+                    <select id="transfer_type" name="transfer_type" onchange="on_transfer_type_selected();" class="start_up_config_options_select">
+                        <option value="" selected>Select</option>
+                        <option value="download">Download</option>
+                        <option value="upload">Upload</option>
+                    </select>
+                    <!--Action based on Transfer Type-->
+                    <div class="start_up_config_options_div">
+                        <!--Download Mode-->
+                        <span custom_force_hide="true" id="unique_id_section">
+                            <label for="unique_id">Enter ID: </label>
+                            <input id="unique_id" name="unique_id" type="text" class="start_up_config_download_id_field">
+                        </span>
+                        <!--Upload Mode-->
+                        <span custom_force_hide="true" id="file_name_section">
+                            <label for="file_name">Choose a file:</label>
+                            <select id="file_name" name="file_name" class="start_up_config_options_select" >
+                                <option id="file_list_top_anchor" value="" selected>Select</option>
+                            </select>
+                            <button id="refresh_file_list_button" type="button" onclick="populate_file_list()">&#x21bb</button>
+                        </span>
+                        <!--Start Button-->
+                        <div id="start_button_section"  class="start_up_config_options_div" custom_force_hide="true">
+                            <button id="start_button" type="button" onclick="start()">Start</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!--Quit-->
+        <form autocomplete="off" id="quit_form" class="quit_form" custom_force_hide="true">
+            <button id="quit_button" type="button" onclick="quit()">Stop</button>
+        </form>
+    </body>
+</html>

@@ -1,0 +1,11 @@
+version: "3.7"
+services: 
+    webapp :
+        build: 
+            context: .
+        image: napufit:latest
+        container_name: napufit
+        network_mode: "host"
+        volumes:
+          - ./docker_mount_uploads:/docker_mount_uploads
+          - ./docker_mount_downloads:/docker_mount_downloads 

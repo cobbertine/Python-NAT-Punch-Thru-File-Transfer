@@ -1,0 +1,5 @@
+{
+    "lan_broadcast_port": 34937,
+    "facilitator_url": "http://host[:port]/facilitator.php",
+    "chunk_size": "2^20"
+}
