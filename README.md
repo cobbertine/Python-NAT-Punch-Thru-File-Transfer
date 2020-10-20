@@ -1,4 +1,4 @@
-# NAPUFIT - **NA**T **PU**NCH-THRU **FI**LE **T**RANSFER
+# NAPUFIT - (NA)T (PU)NCH-THRU (FI)LE (T)RANSFER
 
 ## Requirements
 This was developed with Python 3.8.2; any OS running this version of Python should work.
@@ -65,7 +65,7 @@ Note: **Linux Only**. This docker setup uses the "host" network driver which is 
 * Change to the repo's folder
 * Type: "docker-compose up --build -d"
 * This will automatically create two folders in the repo folder: "docker_mount_downloads" and "docker_mount_uploads". Files you wish to share should be put in uploads, and files you receive will go to downloads
-* Go to your browser and type "http://127.0.0.1:33647"in the URL bar
+* Go to your browser and type "http://127.0.0.1:33647" in the URL bar
 * Use the Web GUI to interact with NAPUFIT
 
 ### .exe (Windows Only)
