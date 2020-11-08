@@ -263,8 +263,12 @@ def upload(network_type, abs_file_path):
             listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             listen_socket.bind(('', locally_bound_port)) # Downloader should be directed to this socket now
             listen_socket.listen() 
-            requests.get(FACILITATOR_URL+PHP_SET_READY+unique_conn_id)            
-            with listen_socket.accept()[0] as connected_socket: # Wait for downloader
+            requests.get(FACILITATOR_URL+PHP_SET_READY+unique_conn_id)          
+            try:
+                received_socket_info = listen_socket.accept()  # Wait for downloader
+            except KeyboardInterrupt as ki:
+                print_and_exit("User quit.")
+            with received_socket_info[0] as connected_socket:
                 requests.get(FACILITATOR_URL+PHP_DELETE+unique_conn_id) # Connection established; online data can be purged.
                 upload_on_connect(connected_socket) # Connection established. Move onto file transfer.
 
@@ -292,7 +296,11 @@ def upload(network_type, abs_file_path):
             broadcast_thread = threading.Thread(target=broadcast_connection, args=(str(locally_bound_port),)) # Broadcast what port the socket is bound to.
             broadcast_thread.daemon = True
             broadcast_thread.start()
-            with listen_socket.accept()[0] as connected_socket: # Begin accepting connections as the broadcast begins.
+            try:
+                received_socket_info = listen_socket.accept() # Begin accepting connections as the broadcast begins.
+            except KeyboardInterrupt as ki:
+                print_and_exit("User quit.")
+            with received_socket_info[0] as connected_socket:
                 with is_connected_lock:
                     is_connected = True
                 upload_on_connect(connected_socket) # Discovery complete & connection established. Move onto file transfer.
@@ -445,6 +453,8 @@ def download(network_type, unique_conn_id, download_path):
                     if time.monotonic() - time_ref >= MAX_WAIT_TIME:
                         print_and_exit("Timed out waiting to connect. Exiting...") # If a connection isn't established after MAX_WAIT seconds, it never will. Something has gone wrong.
                     time.sleep(CONNECT_ATTEMPT_INTERVAL)
+            except KeyboardInterrupt as ki:
+                print_and_exit("User quit.")
             except Exception as e:
                 print_and_exit("Socket connection error. Exiting...")
             download_on_connect(connected_socket) # Connection established. Move onto file transfer.
@@ -458,7 +468,7 @@ def download(network_type, unique_conn_id, download_path):
                 try:
                     r = broadcast_listener_socket.recvfrom(CHUNK_SIZE)
                 except KeyboardInterrupt as e:
-                    print("User quit")
+                    print_and_exit("User quit.")
                 data = r[0].decode().split("|") # r[0] contains packet, r[1] contains remote socket info
                 if data[0] == unique_conn_id:
                     found_uploader = True
@@ -468,6 +478,8 @@ def download(network_type, unique_conn_id, download_path):
             connected_socket.bind(('', 0))
             try:
                 connected_socket.connect((uploader_ip_address, uploader_port))
+            except KeyboardInterrupt as ki:
+                print_and_exit("User quit.")
             except Exception as e:
                 print_and_exit("Socket connection error. Exiting...")
             download_on_connect(connected_socket) # Connection established. Move onto file download
