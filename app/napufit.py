@@ -40,6 +40,8 @@ PHP_NEW = "?new"
 PHP_DELETE = "?delete="
 PHP_GET_DOWNLOADER = "?get_downloader="
 PHP_GET_UPLOADER = "?get_uploader="
+PHP_SET_READY = "?set_ready="
+PHP_CHECK_READY = "?check_ready="
 
 MESSAGE_DELIMITER = b"|||DELIMITER|||"  
 RETURN_RECEIPT_MSG = b"OK"
@@ -48,6 +50,7 @@ print_transfer_progress_timer = time.monotonic()
 PRINT_TRANFER_PROGRESS_INTERVAL = 5
 TRANSFER_CHECK_INTERVAL = 1
 CONNECT_ATTEMPT_INTERVAL = 5
+MAX_WAIT_TIME = 180
 user_choice_yes = b"y"
 user_choice_no = b"n"
 
@@ -116,6 +119,7 @@ def upload(network_type, abs_file_path):
                 # i.e. if the source and destination address are exactly the same, an error will be thrown
                 # SO_LINGER with a value of 0 will ensure that TIME_WAIT never occurs and that the socket is discarded immediately.
                 punch_socket.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0))
+                punch_socket.settimeout(1)
                 punch_socket.bind(('', local_port))
                 punch_socket.connect(dest_address)
         except:
@@ -213,7 +217,7 @@ def upload(network_type, abs_file_path):
         #### Listen for downloader
         is_stream_request_closed = False
         try:
-            # Send a POST request to the facilitator, get a unique ID in return.
+            # Send a request to the facilitator, get a unique ID in return.
             # Facilitator saves external IP and port of uploader, associating them with the unique ID.
             with requests.get(FACILITATOR_URL+PHP_NEW, stream=True) as facilitator_server_response: #stream=true to expose underlying socket
                 requests_socket = socket.fromfd(facilitator_server_response.raw.fileno(), socket.AF_INET, socket.SOCK_STREAM)
@@ -239,8 +243,7 @@ def upload(network_type, abs_file_path):
 
         thread_safe_print("Waiting for downloader...")       
 
-        # Periodically check the facilitator to see if a downloader is available & associated with your unique ID.         
-        MAX_WAIT_TIME = 180
+        # Periodically check the facilitator to see if a downloader is available & associated with your unique ID.
         time_ref = time.monotonic()
         downloader_details = ""
         while downloader_details == "":
@@ -255,10 +258,12 @@ def upload(network_type, abs_file_path):
 
         # Allow the downloader to connect.
         tcp_punch(locally_bound_port, downloader_address) # Punch-thru to let downloader reach the listening socket below.
+
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as listen_socket:
             listen_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             listen_socket.bind(('', locally_bound_port)) # Downloader should be directed to this socket now
             listen_socket.listen() 
+            requests.get(FACILITATOR_URL+PHP_SET_READY+unique_conn_id)            
             with listen_socket.accept()[0] as connected_socket: # Wait for downloader
                 requests.get(FACILITATOR_URL+PHP_DELETE+unique_conn_id) # Connection established; online data can be purged.
                 upload_on_connect(connected_socket) # Connection established. Move onto file transfer.
@@ -424,17 +429,21 @@ def download(network_type, unique_conn_id, download_path):
 
         thread_safe_print("Attempting to connect to uploader.")
 
+        is_ready = False
+        while not is_ready:
+            time.sleep(CONNECT_ATTEMPT_INTERVAL)
+            is_ready = bool(int(requests.get(FACILITATOR_URL+PHP_CHECK_READY+unique_conn_id).text))
+
         # Attempt to connect to the uploader. 
         # Once the uploader does a punch-thru to the external ip and port combo recorded by the facilitator, a connection should be established
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as connected_socket:
             connected_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             connected_socket.bind(('', locally_bound_port))
-            MAX_WAIT_TIME = 30
             time_ref = time.monotonic()
             try: 
                 while connected_socket.connect_ex(uploader_address) != 0:
                     if time.monotonic() - time_ref >= MAX_WAIT_TIME:
-                        print_and_exit("Timed out waiting to connect. Exiting...") # If a connection isn't established after 30 seconds, it never will. Something has gone wrong.
+                        print_and_exit("Timed out waiting to connect. Exiting...") # If a connection isn't established after MAX_WAIT seconds, it never will. Something has gone wrong.
                     time.sleep(CONNECT_ATTEMPT_INTERVAL)
             except Exception as e:
                 print_and_exit("Socket connection error. Exiting...")
