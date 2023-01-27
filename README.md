@@ -1,4 +1,4 @@
-# NAPUFIT - (NA)T (PU)NCH-THRU (FI)LE (T)RANSFER
+# Python NAT Punch-Thru File Transfer
 
 ## Requirements
 This was developed with Python 3.8.2; any OS running this version of Python should work.
